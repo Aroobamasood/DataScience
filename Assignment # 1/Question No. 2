@@ -1,0 +1,94 @@
+# 16 September 2023
+# CSC461 – Assignment1 – Web Scraping
+# AROOBA MASOOD
+# FA20-BSE-092
+""" I have added two functions here.
+1. To scrape people names whose birthdate is 13th of march from timeanddate website.
+    It sends a GET request to the "timeanddate.com" website's page for the specified date and then extracts the
+    names from the HTML content and returns a list of names if found.
+
+2. To scrape major events happened on 13th of march from britannica website.
+    It retrieves the featured event's title and description, as well as more events happened on the specific date
+    from the webpage. The data is then formatted and returned as a list of strings.
+"""
+
+import requests
+from bs4 import BeautifulSoup
+
+
+# Function to scrape people names with whom I share my birthdate.
+def birthdays():
+    try:
+        url = f"https://www.timeanddate.com/on-this-day/march/13"
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            birthdays_div = soup.find('div', {'class': 'otd-life__block'})
+            birthdays = birthdays_div.find_all('h3', {'class': 'otd-title'})
+            return [birthday.text.strip() for birthday in birthdays]
+
+    except Exception as e:
+        print(f"Error occurred while scraping birthdates: {e}")
+        return []
+
+
+def events():
+    url = f"https://www.britannica.com/on-this-day/March-13"
+    response = requests.get(url)
+
+    try:
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            title_div = soup.find('div', class_='title font-18 font-weight-bold mb-10')
+            featured_events = []
+            if title_div:
+                title_text = title_div.get_text(strip=True)
+                featured_events.append(f"----- {title_text} -----")
+
+            description_div = title_div.find_next('div', class_='description font-serif')
+            if description_div:
+                div_text = description_div.get_text(strip=True)
+                anchor_tags = description_div.find_all('a')
+                anchor_text = ' '.join([a.get_text(strip=True) for a in anchor_tags])
+                combined_text = div_text + ' ' + anchor_text
+                featured_events.append(combined_text)
+
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            card_body_divs = soup.find_all('div', class_='card-body font-serif')
+
+            more_events = []
+            for card_body_div in card_body_divs:
+                div_text = card_body_div.get_text(strip=True)
+                anchor_text = [a.get_text(strip=True) for a in card_body_div.find_all('a') if
+                               'otd-he-link' not in a.get('class', [])]
+                combined_text = div_text + ' '.join(anchor_text)
+                more_events.append(combined_text)
+
+            return featured_events, more_events
+
+            return [], []
+
+    except Exception as e:
+        print(f"Error occurred while scraping events: {e}")
+        return [], []
+
+
+birthdate = '13 march'
+timeanddate = birthdays()
+featured_events, more_events = events()
+
+output_file = f"{birthdate}.txt"
+with open(output_file, 'w', encoding='utf-8') as file:
+    file.write(f"Birthdays on {birthdate}:\n")
+    for birthday in timeanddate:
+        file.write(f"- {birthday}\n")
+
+    file.write(f"\nFeatured Events on {birthdate}:\n")
+    for event in featured_events:
+        file.write(f"{event}.\n")
+
+    file.write(f"\nMore Events on {birthdate}:\n")
+    for event in more_events:
+        file.write(f"- {event}.\n")
