@@ -1,0 +1,58 @@
+# 16 September 2023
+# CSC461 – Assignment1 – Web Scraping
+# AROOBA MASOOD
+# FA20-BSE-092
+"""
+The task involves scraping data from multiple IMDb movie URLs, including movie titles and ratings.
+The data is extracted using Python, specifically the BeautifulSoup library and Pandas for web scraping.
+A DataFrame is created to organize the scraped information.
+Finally, the DataFrame is saved to an Excel file named "MoviesData.xlsx" for further analysis or reference.
+"""
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import time
+
+urls = [
+    "https://www.imdb.com/title/tt11737520/?ref_=hm_top_tt_i_1",
+    "https://www.imdb.com/title/tt7462410/?ref_=hm_stp_pvs_piv_tt_i_1",
+    "https://www.imdb.com/title/tt5180504/?ref_=tt_sims_tt_i_2",
+    "https://www.imdb.com/title/tt0804484/?ref_=tt_sims_tt_i_4",
+    "https://www.imdb.com/title/tt4574334/?ref_=tt_sims_tt_i_2",
+]
+
+data = []
+
+for i, URL in enumerate(urls, start=1):
+    try:
+        response = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
+        time.sleep(3)
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        heading = soup.find('h1', {'class': 'sc-afe43def-0 hnYaOZ'})
+        if heading:
+            span = heading.find('span')
+            title = span.text.strip()
+        else:
+            title = "Title not found"
+
+        div_element = soup.find('div', {'class': 'sc-bde20123-2 gYgHoj'})
+        if div_element:
+            ratings_element = div_element.find_all('span')
+            if ratings_element:
+                rating = ' '.join([rating.text.strip() for rating in ratings_element])
+            else:
+                rating = "Rating not found"
+        else:
+            rating = "Rating not found"
+
+        data.append({"Sr No": i, "Title": title, "Rating": rating})
+
+    except Exception as e:
+        print(f"Error occurred while scraping data: {e}")
+
+df = pd.DataFrame(data)
+Excel_file = "MoviesData.xlsx"
+df.to_excel(Excel_file, index=False)
+
